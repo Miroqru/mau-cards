@@ -6,7 +6,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
-from loguru import logger
 from mau.deck.card import UnoCard
 
 from mau_cards.generator import to_image
@@ -30,5 +29,4 @@ async def get_card(card: str, cover: bool):
         return FileResponse("assets/base.png")
 
     image = to_image(uno_card, cover)
-    logger.debug(image)
     return StreamingResponse(image, media_type="image/png")

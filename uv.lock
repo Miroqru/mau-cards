@@ -94,7 +94,7 @@ wheels = [
 [[package]]
 name = "mau"
 version = "2.2"
-source = { git = "https://github.com/miroqru/mauno#338fb5821225d1174142d814a421319aaebf2d41" }
+source = { git = "https://github.com/miroqru/mauno#f9c0602b12ff61ce662847636021707d2b85dc3e" }
 dependencies = [
     { name = "loguru" },
 ]

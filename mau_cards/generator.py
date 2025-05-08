@@ -41,6 +41,14 @@ def _add_reverse_sym(base: Image.Image, sym: Iterable[str | int]) -> None:
         offset += 8 + sym_image.size[0]
 
 
+def _add_glyph(base: Image.Image, color: str, glyph: str) -> None:
+    glyph_image = Image.open(ASSETS_PATh / "glyph" / color / f"{glyph}.png")
+
+    x = base.size[0] // 2 - (glyph_image.size[0] // 2)
+    y = base.size[1] // 2 - (glyph_image.size[1] // 2)
+    base.alpha_composite(glyph_image, (x, y))
+
+
 def _uncover(base: Image.Image) -> Image.Image:
     res = Image.new("RGBA", base.size)
     for py in range(base.size[1]):
@@ -68,24 +76,32 @@ def to_image(card: UnoCard, uncover: bool = False) -> io.BytesIO:
 
     if isinstance(card.behavior, behavior.TurnBehavior):
         sym: list[str | int] = ["block"]
+        glyph = "block"
 
     elif isinstance(card.behavior, behavior.ReverseBehavior):
         sym = ["reverse"]
+        glyph = "reverse"
 
     elif isinstance(card.behavior, behavior.TakeBehavior):
         sym = ["plus", card.value]
+        glyph = "take_2"
 
     elif isinstance(card.behavior, behavior.WildColorBehavior):
         sym = []
+        glyph = None
 
     elif isinstance(card.behavior, behavior.WildTakeBehavior):
         sym = []
+        glyph = "take_4"
 
     else:
         sym = [card.value]
+        glyph = str(card.value)
 
     _add_sym(draw_layer, sym)
     _add_reverse_sym(draw_layer, sym)
+    if glyph is not None:
+        _add_glyph(draw_layer, str(card.color.value), glyph)
 
     base.alpha_composite(draw_layer)
 
