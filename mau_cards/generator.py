@@ -75,10 +75,10 @@ def to_image(card: UnoCard, uncover: bool = False) -> io.BytesIO:
     elif isinstance(card.behavior, behavior.TakeBehavior):
         sym = ["plus", card.value]
 
-    elif isinstance(card.behavior, behavior.ColorBehavior):
+    elif isinstance(card.behavior, behavior.WildColorBehavior):
         sym = []
 
-    elif isinstance(card.behavior, behavior.ColorTakeBehavior):
+    elif isinstance(card.behavior, behavior.WildTakeBehavior):
         sym = []
 
     else:

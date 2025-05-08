@@ -24,6 +24,7 @@ app.add_middleware(
 
 @app.get("/{card}/{cover}")
 async def get_card(card: str, cover: bool):
+    card = card.replace("%3A5%", ":")
     uno_card = UnoCard.unpack(card)
     if uno_card is None:
         return FileResponse("assets/base.png")
