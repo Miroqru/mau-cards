@@ -49,20 +49,6 @@ def _add_glyph(base: Image.Image, color: str, glyph: str) -> None:
     base.alpha_composite(glyph_image, (x, y))
 
 
-def _uncover(base: Image.Image) -> Image.Image:
-    res = Image.new("RGBA", base.size)
-    for py in range(base.size[1]):
-        for px in range(base.size[0]):
-            r, g, b, a = base.getpixel((px, py))  # type: ignore
-
-            tr = round(r / 1.5)
-            tg = round(g / 1.5)
-            tb = round(b / 1.5)
-            res.putpixel((px, py), (tr, tg, tb, a))
-
-    return res
-
-
 # Главная функция
 # ===============
 
@@ -106,7 +92,7 @@ def to_image(card: UnoCard, uncover: bool = False) -> io.BytesIO:
     base.alpha_composite(draw_layer)
 
     if uncover:
-        base = _uncover(base)
+        base = base.point(lambda p: p // 1.5)
 
     buf = io.BytesIO()
     base.save(buf, format="PNG")
