@@ -3,11 +3,11 @@
 Настраивает сервер и запускает его.
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from loguru import logger
-from mau.deck.generator import card_from_str
+from mau.deck.card import UnoCard
 
 from mau_cards.generator import to_image
 
@@ -24,9 +24,9 @@ app.add_middleware(
 
 @app.get("/{card}/{cover}")
 async def get_card(card: str, cover: bool):
-    uno_card = card_from_str(card)
+    uno_card = UnoCard.unpack(card)
     if uno_card is None:
-        return HTTPException(404, "Card not found")
+        return FileResponse("assets/base.png")
 
     image = to_image(uno_card, cover)
     logger.debug(image)
