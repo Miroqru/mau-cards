@@ -28,7 +28,8 @@ app.add_middleware(
 
 @app.get("/{card}/{cover}")
 async def get_card(card: str, cover: bool):
-    cache_image = await redis.get(card)
+    key = f"{card}/{cover}"
+    cache_image = await redis.get(key)
     if cache_image is not None:
         logger.debug("From cache")
         return StreamingResponse(io.BytesIO(cache_image), media_type="image/png")
@@ -39,5 +40,5 @@ async def get_card(card: str, cover: bool):
 
     logger.info("Render {}", uno_card)
     image = to_image(uno_card, cover)
-    await redis.set(card, image.getvalue())
+    await redis.set(key, image.getvalue())
     return StreamingResponse(image, media_type="image/png")
