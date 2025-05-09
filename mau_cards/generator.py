@@ -86,7 +86,7 @@ def to_image(card: UnoCard, uncover: bool = False) -> io.BytesIO:
         glyph = None
 
     elif isinstance(card.behavior, behavior.WildTakeBehavior):
-        sym = []
+        sym = ["plus", card.value]
         glyph = _take(card.value)
 
     else:
