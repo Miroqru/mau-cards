@@ -53,6 +53,15 @@ def _add_glyph(base: Image.Image, color: str, glyph: str) -> None:
 # ===============
 
 
+def _take(n: int) -> str:
+    if n == 1:
+        return "take_1"
+    if n < 4:
+        return "take_2"
+    else:
+        return "take_4"
+
+
 def to_image(card: UnoCard, uncover: bool = False) -> io.BytesIO:
     """Собирает изображение из карты."""
     base: ImageFile.ImageFile | Image.Image = Image.open(ASSETS_PATh / "base.png")
@@ -70,7 +79,7 @@ def to_image(card: UnoCard, uncover: bool = False) -> io.BytesIO:
 
     elif isinstance(card.behavior, behavior.TakeBehavior):
         sym = ["plus", card.value]
-        glyph = "take_2"
+        glyph = _take(card.value)
 
     elif isinstance(card.behavior, behavior.WildColorBehavior):
         sym = []
@@ -78,7 +87,7 @@ def to_image(card: UnoCard, uncover: bool = False) -> io.BytesIO:
 
     elif isinstance(card.behavior, behavior.WildTakeBehavior):
         sym = []
-        glyph = "take_4"
+        glyph = _take(card.value)
 
     else:
         sym = [card.value]
