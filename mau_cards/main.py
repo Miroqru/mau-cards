@@ -3,8 +3,6 @@
 Настраивает сервер и запускает его.
 """
 
-import io
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
@@ -28,11 +26,11 @@ app.add_middleware(
 
 @app.get("/{card}/{cover}")
 async def get_card(card: str, cover: bool):
-    key = f"{card}/{cover}"
-    cache_image = await redis.get(key)
-    if cache_image is not None:
-        logger.debug("From cache")
-        return StreamingResponse(io.BytesIO(cache_image), media_type="image/png")
+    # key = f"{card}/{cover}"
+    # cache_image = await redis.get(key)
+    # if cache_image is not None:
+    #     logger.debug("From cache")
+    #     return StreamingResponse(io.BytesIO(cache_image), media_type="image/png")
 
     uno_card = UnoCard.unpack(card)
     if uno_card is None:
@@ -40,5 +38,5 @@ async def get_card(card: str, cover: bool):
 
     logger.info("Render {}", uno_card)
     image = to_image(uno_card, cover)
-    await redis.set(key, image.getvalue())
+    # await redis.set(key, image.getvalue())
     return StreamingResponse(image, media_type="image/png")
