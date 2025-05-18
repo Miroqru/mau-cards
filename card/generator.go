@@ -13,8 +13,15 @@ import (
 
 const ASSETS_PATH = "assets/"
 
-func LoadAsset(path string) (*image.NRGBA, error) {
-	file, err := os.Open(ASSETS_PATH + path)
+// Генератор карт
+type CardDrawer struct {
+	asset string
+	card  Card
+	image *image.NRGBA
+}
+
+func LoadAsset(asset string, path string) (*image.NRGBA, error) {
+	file, err := os.Open(ASSETS_PATH + asset + "/" + path)
 	if err != nil {
 		return nil, fmt.Errorf("loader: %w", err)
 	}
@@ -38,20 +45,20 @@ func EncodeImage(m *image.NRGBA) (*bytes.Buffer, error) {
 // Функции отрисовки
 // =================
 
-func addColor(base *image.NRGBA, color string) error {
-	colorImage, err := LoadAsset("color/" + color + ".png")
+func (d CardDrawer) addColor(color string) error {
+	colorImage, err := LoadAsset(d.asset, "color/"+color+".png")
 	if err != nil {
 		return err
 	}
 
-	draw.Draw(base, base.Bounds(), colorImage, image.Point{}, draw.Over)
+	draw.Draw(d.image, d.image.Bounds(), colorImage, image.Point{}, draw.Over)
 	return nil
 }
 
-func addSym(base *image.NRGBA, sym []string) error {
+func (d CardDrawer) addSym(sym []string) error {
 	x, y := -48, -48
 	for _, s := range sym {
-		symImage, err := LoadAsset("sym/" + s + ".png")
+		symImage, err := LoadAsset(d.asset, "sym/"+s+".png")
 		if err != nil {
 			return err
 		}
@@ -59,7 +66,7 @@ func addSym(base *image.NRGBA, sym []string) error {
 		bounds := symImage.Bounds()
 		// TODO: Разобраться со сдвигом
 		// yOffset := (64 - bounds.Max.Y/2)
-		draw.Draw(base, base.Bounds(), symImage, image.Point{x, y}, draw.Over)
+		draw.Draw(d.image, d.image.Bounds(), symImage, image.Point{x, y}, draw.Over)
 
 		x = x - 8 - bounds.Max.X
 	}
@@ -67,10 +74,10 @@ func addSym(base *image.NRGBA, sym []string) error {
 	return nil
 }
 
-func addReverseSym(base *image.NRGBA, sym []string) error {
+func (d CardDrawer) addReverseSym(sym []string) error {
 	x, y := -271, -463
 	for _, s := range sym {
-		symImage, err := LoadAsset("sym_reverse/" + s + ".png")
+		symImage, err := LoadAsset(d.asset, "sym_reverse/"+s+".png")
 		if err != nil {
 			return err
 		}
@@ -79,7 +86,7 @@ func addReverseSym(base *image.NRGBA, sym []string) error {
 		// TODO: Разобраться со сдвигом
 		px := x + bounds.Max.X
 		py := y + bounds.Max.Y
-		draw.Draw(base, base.Bounds(), symImage, image.Point{px, py}, draw.Over)
+		draw.Draw(d.image, d.image.Bounds(), symImage, image.Point{px, py}, draw.Over)
 
 		x = x + 8 + bounds.Max.X
 	}
@@ -87,18 +94,20 @@ func addReverseSym(base *image.NRGBA, sym []string) error {
 	return nil
 }
 
-func addGlyph(base *image.NRGBA, color string, glyph string) error {
-	glyphImage, err := LoadAsset("glyph/" + color + "/" + glyph + ".png")
+func (d CardDrawer) addGlyph(color string, glyph string) error {
+	glyphImage, err := LoadAsset(
+		d.asset, fmt.Sprintf("glyph/%s/%s.png", color, glyph),
+	)
 	if err != nil {
 		return err
 	}
 
-	bounds := base.Bounds()
+	bounds := d.image.Bounds()
 	glyphBounds := glyphImage.Bounds()
 	x := -(bounds.Max.X/2 - (glyphBounds.Max.X / 2))
 	y := -(bounds.Max.Y/2 - (glyphBounds.Max.Y / 2))
 
-	draw.Draw(base, bounds, glyphImage, image.Point{x, y}, draw.Over)
+	draw.Draw(d.image, bounds, glyphImage, image.Point{x, y}, draw.Over)
 	return nil
 }
 
@@ -107,16 +116,12 @@ func uncover(base *image.NRGBA) error {
 	bounds := base.Bounds()
 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
-			// Получаем цвет пикселя из исходного изображения
 			originalColor := base.At(x, y)
 			r, g, b, a := originalColor.RGBA()
 
-			// Применяем затемнение
 			r = uint32(float64(r>>8) * darknessFactor)
 			g = uint32(float64(g>>8) * darknessFactor)
 			b = uint32(float64(b>>8) * darknessFactor)
-
-			// Устанавливаем новый цвет в затемненное изображение
 			base.Set(x, y, color.RGBA{uint8(r), uint8(g), uint8(b), uint8(a >> 8)})
 		}
 	}
@@ -171,39 +176,43 @@ func cardParams(card Card) drawParams {
 	}
 }
 
+func NewDrawer(asset string, card Card) (*CardDrawer, error) {
+	m, err := LoadAsset(asset, "base.png")
+	if err != nil {
+		return nil, err
+	}
+	return &CardDrawer{asset: asset, card: card, image: m}, nil
+}
+
 // Главная функция
-func RenderCard(card Card, cover string) (*image.NRGBA, error) {
-	m, err := LoadAsset("base.png")
-	if err != nil {
-		return nil, err
-	}
-	colorStr := strconv.Itoa(int(card.Color))
+func (d CardDrawer) Render(filter string) (*image.NRGBA, error) {
+	colorStr := strconv.Itoa(int(d.card.Color))
 
-	err = addColor(m, colorStr)
+	err := d.addColor(colorStr)
 	if err != nil {
 		return nil, err
 	}
 
-	params := cardParams(card)
+	params := cardParams(d.card)
 
-	err = addSym(m, params.sym)
+	err = d.addSym(params.sym)
 	if err != nil {
 		return nil, err
 	}
 
-	err = addReverseSym(m, params.sym)
+	err = d.addReverseSym(params.sym)
 	if err != nil {
 		return nil, err
 	}
 
-	err = addGlyph(m, colorStr, params.glyph)
+	err = d.addGlyph(colorStr, params.glyph)
 	if err != nil {
 		return nil, err
 	}
 
-	if cover == "false" {
-		uncover(m)
+	if filter == "uncover" {
+		uncover(d.image)
 	}
 
-	return m, nil
+	return d.image, nil
 }

@@ -19,6 +19,6 @@ func main() {
 	h := card.NewApp(ctx, rdb)
 
 	app := fiber.New()
-	app.Get("/card/:card/:cover", h.SendCard)
+	app.Get("/card/:asset/:card/:filter", h.SendCard)
 	app.Listen(":3112")
 }

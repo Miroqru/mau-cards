@@ -2,6 +2,7 @@ package card
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -19,16 +20,18 @@ func NewApp(ctx context.Context, rdb *redis.Client) App {
 }
 
 func (a App) SendCard(c *fiber.Ctx) error {
-	cardStr := c.Params("card")
-	coverStr := c.Params("cover", "true")
-	log.Info().Str("card", cardStr).Str("cover", coverStr).Msg("New request")
+	assetParam := c.Params("asset")
+	cardParam := c.Params("card")
+	filterParam := c.Params("filter", "cover")
+	log.Debug().Str("card", cardParam).Str("filter", filterParam).Str("asset", assetParam).Msg("New request")
 
-	unoCard, err := ParseCard(cardStr)
+	unoCard, err := ParseCard(cardParam)
 	if err != nil {
-		return fiber.NewError(404, err.Error())
+		return fiber.NewError(404, fmt.Errorf("Card not found: %w", err).Error())
 	}
 
-	key := cardStr + "/" + coverStr
+	// TODO: Если редиска откажется работать
+	key := assetParam + "/" + cardParam + "/" + filterParam
 	val, err := a.rdb.Get(a.ctx, key).Result()
 	if err == redis.Nil {
 		log.Debug().Any("key", key).Msg("Not found")
@@ -40,20 +43,21 @@ func (a App) SendCard(c *fiber.Ctx) error {
 		return c.Send([]byte(val))
 	}
 
-	now := time.Now()
-	log.Debug().Time("now", now).Msg("Start render")
-
-	i, err := RenderCard(*unoCard, coverStr)
+	r, err := NewDrawer(assetParam, *unoCard)
 	if err != nil {
 		return err
 	}
-	log.Info().Dur("took", time.Since(now)).Msg("Render complete")
+
+	i, err := r.Render(filterParam)
+	if err != nil {
+		return err
+	}
 
 	buf, err := EncodeImage(i)
 	if err != nil {
 		return err
 	}
-	log.Info().Dur("took", time.Since(now)).Msg("Card render complete")
+	log.Debug().Msg("Card render complete")
 
 	err = a.rdb.Set(a.ctx, key, buf.Bytes(), time.Duration(time.Duration.Hours(1))).Err()
 	if err != nil {
