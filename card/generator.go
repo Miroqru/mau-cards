@@ -64,10 +64,8 @@ func (d CardDrawer) addSym(sym []string) error {
 		}
 
 		bounds := symImage.Bounds()
-		// TODO: Разобраться со сдвигом
-		// yOffset := (64 - bounds.Max.Y/2)
-		draw.Draw(d.image, d.image.Bounds(), symImage, image.Point{x, y}, draw.Over)
-
+		yOffset := (64 - bounds.Max.Y) / 2
+		draw.Draw(d.image, d.image.Bounds(), symImage, image.Point{x, y - yOffset}, draw.Over)
 		x = x - 8 - bounds.Max.X
 	}
 
@@ -84,8 +82,9 @@ func (d CardDrawer) addReverseSym(sym []string) error {
 
 		bounds := symImage.Bounds()
 		// TODO: Разобраться со сдвигом
+		yOffset := (64 - bounds.Max.Y) / 2
 		px := x + bounds.Max.X
-		py := y + bounds.Max.Y
+		py := y + bounds.Max.Y + yOffset
 		draw.Draw(d.image, d.image.Bounds(), symImage, image.Point{px, py}, draw.Over)
 
 		x = x + 8 + bounds.Max.X
