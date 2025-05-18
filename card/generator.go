@@ -95,9 +95,12 @@ func (d CardDrawer) addReverseSym(sym []string) error {
 }
 
 func (d CardDrawer) addGlyph(color string, glyph string) error {
-	glyphImage, err := LoadAsset(
-		d.asset, fmt.Sprintf("glyph/%s/%s.png", color, glyph),
-	)
+	assetPath := fmt.Sprintf("glyph/%s/%s.png", color, glyph)
+	if d.card.Wild {
+		assetPath = fmt.Sprintf("glyph/%s.png", glyph)
+	}
+
+	glyphImage, err := LoadAsset(d.asset, assetPath)
 	if err != nil {
 		return err
 	}
@@ -155,12 +158,28 @@ func cardParams(card Card) drawParams {
 
 	case "take":
 		return drawParams{
-			[]string{"plus", strconv.Itoa(card.Value)},
-			takeGlyph(card.Value),
+			[]string{"plus", strconv.Itoa(card.Value)}, takeGlyph(card.Value),
 		}
 
+	case "twist":
+		return drawParams{
+			[]string{strconv.Itoa(card.Value), "reverse"},
+			strconv.Itoa(card.Value),
+		}
+
+	case "put":
+		return drawParams{
+			[]string{"minus", strconv.Itoa(card.Value)}, takeGlyph(card.Value),
+		}
+
+	case "color":
+		return drawParams{[]string{"color"}, "/color"}
+
+	case "delta":
+		return drawParams{[]string{"delta"}, "/delta"}
+
 	case "wild+color":
-		return drawParams{[]string{}, "delta"}
+		return drawParams{[]string{"color"}, "color"}
 
 	case "wild+take":
 		return drawParams{

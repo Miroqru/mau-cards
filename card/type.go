@@ -14,9 +14,22 @@ type Card struct {
 	Value    int
 	Cost     int
 	Behavior CardBehavior
+	Wild     bool
 }
 
 var CARD_REGEX = regexp.MustCompile(`(\d)_(\d)_(\d+)_([a-z+]+)`)
+
+func isWild(behavior string) bool {
+	if behavior == "wild+color" {
+		return true
+	}
+
+	if behavior == "wild+take" {
+		return true
+	}
+
+	return false
+}
 
 // Собирает карт из строки
 // Формат цвет_значение_стоимость_тип
@@ -46,5 +59,6 @@ func ParseCard(card string) (*Card, error) {
 		Value:    value,
 		Cost:     cost,
 		Behavior: CardBehavior(cardMatch[4]),
+		Wild:     isWild(cardMatch[4]),
 	}, nil
 }
