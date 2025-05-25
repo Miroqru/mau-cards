@@ -2,7 +2,7 @@ module mau/cards
 
 go 1.24.2
 
-require github.com/gofiber/fiber/v2 v2.52.7 // direct
+require github.com/gofiber/fiber/v2 v2.52.8 // direct
 
 require (
 	github.com/andybalholm/brotli v1.1.0 // indirect
