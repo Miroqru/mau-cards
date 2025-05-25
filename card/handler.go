@@ -15,52 +15,59 @@ type App struct {
 	rdb *redis.Client
 }
 
-func NewApp(ctx context.Context, rdb *redis.Client) App {
-	return App{ctx, rdb}
+func NewApp(ctx context.Context, rdb *redis.Client) *App {
+	return &App{ctx, rdb}
 }
 
 func (a App) SendCard(c *fiber.Ctx) error {
 	assetParam := c.Params("asset")
 	cardParam := c.Params("card")
 	filterParam := c.Params("filter", "cover")
-	log.Debug().Str("card", cardParam).Str("filter", filterParam).Str("asset", assetParam).Msg("New request")
 
 	unoCard, err := ParseCard(cardParam)
 	if err != nil {
-		return fiber.NewError(404, fmt.Errorf("Card not found: %w", err).Error())
+		errMsg := fmt.Errorf("parse card error: %w", err)
+		log.Error().Err(err).Msg("Parse card error")
+		return fiber.NewError(404, errMsg.Error())
 	}
 
 	// TODO: Если редиска откажется работать
-	key := assetParam + "/" + cardParam + "/" + filterParam
-	val, err := a.rdb.Get(a.ctx, key).Result()
-	if err == redis.Nil {
-		log.Debug().Any("key", key).Msg("Not found")
+	cacheKey := fmt.Sprintf("%s/%s/%s", assetParam, cardParam, filterParam)
 
-	} else if err != nil {
-		return err
-	} else {
+	val, err := a.rdb.Get(a.ctx, cacheKey).Result()
+	if err == nil {
+		log.Debug().Str("key", cacheKey).Msg("Use card from cache")
 		c.Set("Content-Type", "image/png")
 		return c.Send([]byte(val))
+	} else if err == redis.Nil {
+		log.Debug().Any("key", cacheKey).Msg("Not found")
+	} else {
+		log.Error().Err(err).Msg("Redis error")
+		return fiber.NewError(500, err.Error())
 	}
 
-	r, err := NewDrawer(assetParam, *unoCard)
+	drawer, err := NewDrawer(assetParam, *unoCard)
 	if err != nil {
+		log.Error().Err(err).Msg("Create drawer")
 		return err
 	}
 
-	i, err := r.Render(filterParam)
+	i, err := drawer.Render(filterParam)
 	if err != nil {
+		log.Error().Err(err).Msg("Card render error")
 		return err
 	}
 
 	buf, err := EncodeImage(i)
 	if err != nil {
+		log.Error().Err(err).Msg("Encode image error")
 		return err
 	}
 	log.Debug().Msg("Card render complete")
 
-	err = a.rdb.Set(a.ctx, key, buf.Bytes(), time.Duration(time.Duration.Hours(1))).Err()
+	err = a.rdb.Set(a.ctx, cacheKey, buf.Bytes(), time.Duration(time.Hour)).Err()
 	if err != nil {
+		log.Error().Err(err).Msg("Redis error")
 		return err
 	}
 
