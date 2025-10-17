@@ -19,7 +19,7 @@ require (
 	golang.org/x/sys v0.33.0 // indirect
 )
 
-require github.com/redis/go-redis/v9 v9.8.0
+require github.com/redis/go-redis/v9 v9.14.0
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
